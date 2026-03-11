@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bulk Hex Coordinate Decoder with Maps</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #222; }
+    textarea { width: 480px; height: 54px; font-size: 1.08em; }
+    .result-table { border-collapse: collapse; margin-top: 18px; min-width: 570px;}
+    .result-table th, .result-table td { border: 1px solid #cfd8dc; padding: 6px 9px; font-size:1em;}
+    .result-table th { background: #f4f6fa; }
+    .invalid { color: #b62222; font-size: 0.94em; }
+    .btn-gmaps {
+      background: #3478f6;
+      border: none;
+      color: white;
+      font-size: .98em;
+      border-radius: 5px;
+      padding: 0.32em 0.9em;
+      margin-left: 3px;
+      cursor: pointer;
+      transition: background .14s;
+      margin-bottom: 2px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-gmaps:hover { background: #2859b1;}
+    .inverse-label { color: #416db3; font-size: 0.97em;}
+    @media (max-width:700px) {.result-table{font-size:0.95em; min-width:0;}}
+    @media (max-width:570px) { textarea{width:97vw;} .result-table{font-size:0.89em;}}
+    @media (max-width:420px) { .result-table td, .result-table th {padding:3px 4px;} }
+  </style>
+</head>
+<body>
+<h2>Bulk Hex Coordinate Decoder</h2>
+<label for="hexInput">
+  Enter a hex string to decode all coordinates (with or without <code>0x</code>):</label><br>
+<textarea id="hexInput">0x4b7f9a1c2d3e4f5a6b7c8d9e0f1a2b3c</textarea><br>
+<button onclick="decodeAllHexCoords()">Decode Coordinates</button>
+<div id="results"></div>
+<script>
+function letterToNumber(char) {
+  if (/^[A-Fa-f]$/.test(char)) {
+    return String(char.toUpperCase().charCodeAt(0) - 65 + 1);
+  }
+  return char;
+}
+function pos1Direction(d, inverseMode = false) {
+  if (!d) return { dir: "", inverseDir: "" };
+  if (d === "1" || d === "4") return { dir: "N", inverseDir: "N" };
+  if (d === "2" || d === "6" || d === "8") return { dir: "S", inverseDir: "S" };
+  if (d === "3" || d === "5" || d === "7" || d === "9") return { dir: "W", inverseDir: "W" };
+  const ch = d.toUpperCase();
+  switch (ch) {
+    case "A": case "D": case "H": case "I": case "N": case "P": case "U": case "W": case "Y": case "Z":
+      return { dir: "N", inverseDir: "N" };
+    case "B": case "E": case "F": case "G": case "J": case "K": case "M": case "S": case "X":
+      return { dir: "S", inverseDir: "S" };
+    case "C": case "L": case "O": case "R": case "T": case "V":
+      return { dir: "W", inverseDir: "W" };
+    case "Q":
+      return inverseMode ? { dir: "S", inverseDir: "N" } : { dir: "N", inverseDir: "S" };
+    default:
+      return { dir: "", inverseDir: "" };
+  }
+}
+function buildGMapsURL(lat, dir, lon = 24) {
+  let n = parseInt(lat, 10);
+  if (dir === 'S' || dir === 'W') n = -n;
+  return `https://maps.google.com/?q=${n},${lon}`;
+}
+function decodeAllHexCoords() {
+  let input = document.getElementById('hexInput').value.trim();
+  input = input.replace(/^0x/, '').replace(/\s/g, '');
+  let html = `<table class="result-table"><tr>
+    <th>#</th>
+    <th>Hex</th>
+    <th>Lat</th>
+    <th>Dir</th>
+    <th>Long</th>
+    <th>Maps</th>
+    <th>Inverse Lat</th>
+    <th>Inverse Dir</th>
+    <th>Inverse Maps</th>
+    <th>Note</th>
+  </tr>`;
+  let count = 0;
+  let invalidCount = 0;
+  for (let i = 0; i + 4 <= input.length; i += 4) {
+    const chunk = input.substr(i, 4);
+    const pos1 = chunk[0];
+    const pos2 = letterToNumber(chunk[1]);
+    const pos3 = letterToNumber(chunk[2]);
+    // Validate positions 2 and 3 must be digits 0-9 after A=1, etc
+    if (!/^\d+$/.test(pos2) || !/^\d+$/.test(pos3)) {
+      html += `<tr><td>${count+1}</td><td>${chunk}</td><td colspan="8" class="invalid">Skipped (invalid digits: ${chunk[1]},${chunk[2]})</td></tr>`;
+      invalidCount++;
+      count++;
+      continue;
+    }
+    // Direction logic
+    let dirObj = pos1Direction(pos1, false);
+    let invObj = pos1Direction(pos1, true);
+
+    if (!dirObj.dir) {
+      html += `<tr><td>${count+1}</td><td>${chunk}</td><td colspan="8" class="invalid">Skipped (invalid direction: ${pos1})</td></tr>`;
+      invalidCount++;
+      count++;
+      continue;
+    }
+    // Normal + inverse latitude digits
+    let lat = `${pos2}${pos3}`;
+    let latDir = dirObj.dir;
+    let invLat = `${pos3}${pos2}`;
+    let invLatDir = invObj.dir;
+    let origMapsBtn = '';
+    let invMapsBtn = '';
+    // Q/q = N on original, S on inverse
+    let note = (pos1.toLowerCase()==='q') ?
+       '<span class="inverse-label">Q/q: inverse shows South</span>' : '';
+    // Only show Google Maps buttons if direction is not ambiguous and is N/S/W
+    if (latDir.length === 1 && (latDir === 'N' || latDir === 'S' || latDir === 'W')) {
+      origMapsBtn = `<a class="btn-gmaps" href="${buildGMapsURL(lat,latDir)}" target="_blank" title="Open in Google Maps">Maps</a>`;
+    }
+    if (invLatDir.length === 1 && (invLatDir === 'N' || invLatDir === 'S' || invLatDir === 'W')) {
+      invMapsBtn = `<a class="btn-gmaps" href="${buildGMapsURL(invLat,invLatDir)}" target="_blank" title="Open in Google Maps (inverse)">Maps</a>`;
+    }
+    html += `<tr>
+      <td>${count+1}</td>
+      <td>${chunk}</td>
+      <td>${lat}</td>
+      <td>${latDir}</td>
+      <td>24° E</td>
+      <td>${origMapsBtn}</td>
+      <td>${invLat}</td>
+      <td>${invLatDir}</td>
+      <td>${invMapsBtn}</td>
+      <td>${note}</td>
+      </tr>`;
+    count++;
+  }
+  html += `</table>`;
+  html += `<div style="margin-top:14px;font-size:1.03em;"><b>Total decoded:</b> ${count-invalidCount}, <b>Skipped:</b> ${invalidCount}</div>`;
+  document.getElementById('results').innerHTML = html;
+}
+</script>
+</body>
+</html>
