@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Coordinate Converter</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root {
+      --brand: #4467bb;
+      --bg: #f6f8fa;
+      --card-bg: #fff;
+      --border: #dde1ec;
+      --accent: #62a3f8;
+      --shadow: 0 2px 12px rgba(68,103,187,0.08);
+      --radius: 12px;
+    }
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+      color: #2f3653;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      max-width: 440px;
+      width: 95vw;
+      padding: 2.2rem 2rem 2rem 2rem;
+      margin: 2.5rem 0;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .title {
+      color: var(--brand);
+      font-size: 2.0rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      margin-bottom: 0.5em;
+      text-align:center;
+    }
+    .desc {
+      margin: 0 0 0.6em 0;
+      font-size: 1.07em;
+      color: #556198;
+      text-align: center;
+    }
+    label {
+      font-size: 1em;
+      color: var(--brand);
+      font-weight: 500;
+      margin-bottom: 0.25em;
+    }
+    .input-row {
+      display: flex;
+      gap: 0.7em;
+      margin-bottom: 0.5em;
+    }
+    input[type="text"] {
+      flex: 1 0 0;
+      font-size: 1.16em;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.55em 0.75em;
+      background: #fbfbfd;
+      outline:none;
+      transition: border .22s;
+    }
+    input[type="text"]:focus {
+      border: 1.5px solid var(--accent);
+      background: #f1f7fe;
+    }
+    button {
+      background: var(--brand);
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 0.53em 1.25em;
+      font-size: 1.08em;
+      cursor: pointer;
+      transition: background 0.17s;
+      margin-right: 0.5em;
+      box-shadow: 0 1px 4px rgba(68,103,187,0.05);
+    }
+    button:hover:not(:disabled) {
+      background: var(--accent);
+    }
+    button:disabled {
+      opacity:.52;
+      cursor: not-allowed;
+    }
+    .card-section {
+      background: #f7faff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 1rem 1.2em 1.2em 1.2em;
+      margin-bottom: 0.4em;
+      box-shadow: 0 1px 4px rgba(68,103,187,0.03);
+      min-height: 80px;
+      position: relative;
+    }
+    .card-title {
+      color: var(--brand);
+      font-weight: 600;
+      font-size: 1.15em;
+      margin-bottom: .2em;
+      letter-spacing: 0.2px;
+    }
+    .digits {
+      color:#6a7ec2; font-size:0.96em; margin-bottom:0.5em;
+      letter-spacing:0.2px;
+    }
+    .coord {
+      font-size: 1.05em;
+      font-weight: 600;
+      margin-top: 0.3em;
+      color: #1e2d4d;
+      letter-spacing: 0.2px;
+      word-break: break-all;
+    }
+    .coord-action-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7em;
+      margin-top:0.4em;
+    }
+    #notification, #notificationInverted {
+      color: #11b463;
+      font-weight: 600;
+      margin-left: 0.4em;
+      opacity: 0;
+      transition: opacity 0.22s;
+      font-size: 1em;
+      background: #e8fdee;
+      border-radius: 5px;
+      padding: 0 8px;
+      border: 1px solid #c5f1d1;
+    }
+    @media (max-width: 520px) {
+      .container { padding: 1.2rem 0.3rem 1.2rem 0.3rem; }
+      .title { font-size:1.3rem;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">Coordinate Converter</div>
+    <div class="desc">Enter a 5-digit number. Get latitude/longitude, copy or map them, and invert N/S E/W if needed.</div>
+    <form onsubmit="processDigits();return false;">
+      <label for="input5">5-digit number</label>
+      <div class="input-row">
+        <input type="text" maxlength="5" id="input5" placeholder="e.g. 30510" autocomplete="off" pattern="\d{5}">
+        <button type="submit">Convert</button>
+      </div>
+    </form>
+    <div class="card-section">
+      <div class="card-title">Original Coordinates</div>
+      <div id="result"></div>
+      <div class="coord-action-row" id="coord-line" style="display:none;">
+        <button onclick="copyCoord('orig')">Copy</button>
+        <button onclick="showOnMap('orig')">Show on Map</button>
+        <span id="notification"></span>
+      </div>
+    </div>
+    <button id="invertBtn" onclick="showInverted()" style="display:none; margin:0.5em auto 0.1em auto;min-width:160px;">Show as South West</button>
+    <div class="card-section">
+      <div class="card-title">Inverted Coordinates (S/W)</div>
+      <div id="invertedResult"></div>
+      <div class="coord-action-row" id="coord-line-inv" style="display:none;">
+        <button onclick="copyCoord('inv')">Copy</button>
+        <button onclick="showOnMap('inv')">Show on Map</button>
+        <span id="notificationInverted"></span>
+      </div>
+    </div>
+  </div>
+<script>
+let lastOrigLat = null, lastOrigLng = null, lastOrigText = "";
+let lastInvLat = null, lastInvLng = null, lastInvText = "";
+
+function processDigits() {
+    const input = document.getElementById("input5").value.trim();
+    const result = document.getElementById("result");
+    const coordLine = document.getElementById("coord-line");
+    const invertBtn = document.getElementById("invertBtn");
+    const invSection = document.getElementById("invertedResult");
+    const invCoordLine = document.getElementById("coord-line-inv");
+    // Reset
+    result.innerHTML = "";
+    invSection.innerHTML = "";
+    coordLine.style.display = "none";
+    invCoordLine.style.display = "none";
+    invertBtn.style.display = "none";
+    lastOrigLat = lastOrigLng = lastOrigText = "";
+    lastInvLat = lastInvLng = lastInvText = "";
+
+    if (!/^\d{5}$/.test(input)) {
+        result.innerHTML = "<span style='color:red'>Please enter exactly 5 digits.</span>";
+        return;
+    }
+    // Assign [A][B][C][D][E]
+    const digits = input.split('');
+    const [A,B,C,D,E] = digits;
+
+    // [C][A] EAST, NORTH = sum([A][B], [D][E])
+    let east = Number(C + A);
+    let north = parseInt(A + B, 10) + parseInt(D + E, 10);
+
+    // Format with 4 decimals
+    const formattedEast = east.toFixed(4) + "° E";
+    const formattedNorth = north.toFixed(4) + "° N";
+
+    // Save coordinates for original
+    lastOrigLat = north;
+    lastOrigLng = east;
+    lastOrigText = `${formattedNorth}, ${formattedEast}`;
+
+    let output = `<div class="digits">[A]=${A} [B]=${B} [C]=${C} [D]=${D} [E]=${E}</div>
+                  <div class="coord">${formattedNorth}, ${formattedEast}</div>`;
+
+    result.innerHTML = output;
+    coordLine.style.display = "flex";
+    invertBtn.style.display = "inline-block";
+}
+
+function copyCoord(which) {
+    if (which === 'orig' && lastOrigText) {
+        navigator.clipboard.writeText(lastOrigText).then(() => showNotification("Coordinate has been copied!", 'orig'));
+    } else if (which === 'inv' && lastInvText) {
+        navigator.clipboard.writeText(lastInvText).then(() => showNotification("Inverted coordinate copied!", 'inv'));
+    }
+}
+
+function showNotification(msg, which) {
+    const note = document.getElementById(which === 'inv' ? "notificationInverted" : "notification");
+    note.textContent = msg;
+    note.style.opacity = 1;
+    setTimeout(() => {
+        note.style.opacity = 0;
+    }, 2000);
+}
+
+function showOnMap(which) {
+    let lat, lng;
+    if (which === 'orig') {
+        lat = lastOrigLat; lng = lastOrigLng;
+    } else {
+        lat = -lastOrigLat;
+        lng = -lastOrigLng;
+    }
+    if (lat === null || lng === null) return;
+    const url = `https://www.google.com/maps?q=${lat.toFixed(4)},${lng.toFixed(4)}`;
+    window.open(url, "_blank");
+}
+
+function showInverted() {
+    if (lastOrigLat === null || lastOrigLng === null) return;
+    const invSection = document.getElementById("invertedResult");
+    const invCoordLine = document.getElementById("coord-line-inv");
+    // Invert hemisphere labels only (N <-> S, E <-> W), numbers don't change
+    const formattedEast = lastOrigLng.toFixed(4) + "° W";
+    const formattedNorth = lastOrigLat.toFixed(4) + "° S";
+    lastInvLat = -lastOrigLat;
+    lastInvLng = -lastOrigLng;
+    lastInvText = `${formattedNorth}, ${formattedEast}`;
+    invSection.innerHTML = `<div class="coord">${formattedNorth}, ${formattedEast}</div>`;
+    invCoordLine.style.display = "flex";
+}
+
+///This only works for only specific format///
+</script>
+</body>
+</html>
