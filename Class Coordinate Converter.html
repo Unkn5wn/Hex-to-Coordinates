@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Coordinate Converter</title>
+  <title>Multi-Coordinate Converter</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     :root {
@@ -13,6 +13,8 @@
       --accent: #62a3f8;
       --shadow: 0 2px 12px rgba(68,103,187,0.08);
       --radius: 12px;
+      --danger: #ff5e6c;
+      --success: #2cb869;
     }
     body {
       background: var(--bg);
@@ -29,21 +31,21 @@
       background: var(--card-bg);
       box-shadow: var(--shadow);
       border-radius: var(--radius);
-      max-width: 440px;
-      width: 95vw;
+      max-width: 680px;
+      width: 98vw;
       padding: 2.2rem 2rem 2rem 2rem;
       margin: 2.5rem 0;
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
+      gap: 1.4rem;
     }
     .title {
       color: var(--brand);
       font-size: 2.0rem;
       font-weight: 700;
       letter-spacing: 1.2px;
-      margin-bottom: 0.5em;
+      margin-bottom: 0.4em;
       text-align:center;
     }
     .desc {
@@ -58,22 +60,18 @@
       font-weight: 500;
       margin-bottom: 0.25em;
     }
-    .input-row {
-      display: flex;
-      gap: 0.7em;
-      margin-bottom: 0.5em;
-    }
-    input[type="text"] {
-      flex: 1 0 0;
-      font-size: 1.16em;
+    textarea {
+      width: 100%; min-height: 80px; max-height:200px;
+      font-size: 1.12em;
       border: 1px solid var(--border);
       border-radius: 7px;
-      padding: 0.55em 0.75em;
+      padding: 0.75em 1.05em;
       background: #fbfbfd;
       outline:none;
       transition: border .22s;
+      resize:vertical;
     }
-    input[type="text"]:focus {
+    textarea:focus {
       border: 1.5px solid var(--accent);
       background: #f1f7fe;
     }
@@ -84,11 +82,13 @@
       border: none;
       border-radius: 8px;
       padding: 0.53em 1.25em;
-      font-size: 1.08em;
+      font-size: 1em;
       cursor: pointer;
-      transition: background 0.17s;
-      margin-right: 0.5em;
-      box-shadow: 0 1px 4px rgba(68,103,187,0.05);
+      transition: background 0.15s;
+      margin-top: 0.17em;
+      margin-right: 0.45em;
+      margin-bottom: 0.1em;
+      box-shadow: 0 1px 4px rgba(68,103,187,0.06);
     }
     button:hover:not(:disabled) {
       background: var(--accent);
@@ -97,184 +97,253 @@
       opacity:.52;
       cursor: not-allowed;
     }
-    .card-section {
-      background: #f7faff;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      padding: 1rem 1.2em 1.2em 1.2em;
-      margin-bottom: 0.4em;
-      box-shadow: 0 1px 4px rgba(68,103,187,0.03);
-      min-height: 80px;
+    #notif {
+      position: relative;
+      display:inline-block;
+      margin-bottom: 1.2em;
+      width: 100%;
+    }
+    .toast {
+      display: inline-block;
+      padding: 0.66em 1.4em;
+      border-radius: 7px;
+      font-size: 1em;
+      font-weight:600;
+      background: var(--danger);
+      color:#fff;
+      margin-bottom:1em;
+      box-shadow:0 1px 7px rgba(0,0,0,0.09);
+      opacity:1;
+      transition:opacity 0.25s;
+      z-index:100;
       position: relative;
     }
-    .card-title {
+    .toast.success {
+      background: var(--success);
+    }
+    #downloadBtn {
+      display:none;
+      margin: 0.8em 0 0.5em 0;
+      padding: 0.52em 3em;
+      font-size: 1.08em;
+      border-radius: 8px;
+      letter-spacing: 0.05em;
+    }
+    table {
+      border-collapse:collapse;
+      width:100%;
+      background: #fbfcff;
+      border-radius: 7px;
+      box-shadow:0 1px 4px rgba(68,103,187,0.07);
+      font-size:1.01em;
+      margin-bottom: 0.5em;
+    }
+    th, td {
+      padding: 0.7em 0.6em;
+      text-align:center;
+    }
+    th {
+      background: #e7ecfc;
       color: var(--brand);
-      font-weight: 600;
-      font-size: 1.15em;
-      margin-bottom: .2em;
-      letter-spacing: 0.2px;
+      border-bottom: 2px solid var(--border);
+      font-weight: bold;
+    }
+    tr:nth-child(even) td {
+      background: #f5f7fa;
     }
     .digits {
-      color:#6a7ec2; font-size:0.96em; margin-bottom:0.5em;
-      letter-spacing:0.2px;
+      color:#657bd1; font-size:1.19em; font-weight: 500; letter-spacing:.14em; white-space:nowrap;
     }
     .coord {
-      font-size: 1.05em;
+      font-size: 1.04em;
       font-weight: 600;
-      margin-top: 0.3em;
       color: #1e2d4d;
-      letter-spacing: 0.2px;
+      letter-spacing: 0.15px;
       word-break: break-all;
     }
-    .coord-action-row {
+    .actions {
       display: flex;
-      align-items: center;
-      gap: 0.7em;
-      margin-top:0.4em;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+      gap:0.4em;
     }
-    #notification, #notificationInverted {
-      color: #11b463;
-      font-weight: 600;
-      margin-left: 0.4em;
-      opacity: 0;
-      transition: opacity 0.22s;
-      font-size: 1em;
-      background: #e8fdee;
-      border-radius: 5px;
-      padding: 0 8px;
-      border: 1px solid #c5f1d1;
+    .error-cell {
+      color: var(--danger);
+      font-weight:600;
     }
-    @media (max-width: 520px) {
-      .container { padding: 1.2rem 0.3rem 1.2rem 0.3rem; }
-      .title { font-size:1.3rem;}
+    @media (max-width: 700px) {
+      .container { padding: 1.15rem 0.1rem 1.15rem 0.1rem; }
+      th, td { padding:0.5em 0.18em;}
+      #downloadBtn { width:90vw; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="title">Coordinate Converter</div>
-    <div class="desc">Enter a 5-digit number. Get latitude/longitude, copy or map them, and invert N/S E/W if needed.</div>
-    <form onsubmit="processDigits();return false;">
-      <label for="input5">5-digit number</label>
-      <div class="input-row">
-        <input type="text" maxlength="5" id="input5" placeholder="e.g. 30510" autocomplete="off" pattern="\d{5}">
-        <button type="submit">Convert</button>
-      </div>
+    <div class="title">Multi-Coordinate Converter</div>
+    <div class="desc">
+      Enter multiple 5-digit numbers (comma, space, or newline separated).<br>
+      Get both N/E and S/W coordinates for each, copy, map, or download!
+    </div>
+    <div id="notif"></div>
+    <form onsubmit="processMultipleInputs();return false;">
+      <label for="codesArea">5-digit numbers:</label>
+      <textarea id="codesArea" placeholder="Example:
+30510
+33645, 46780 30503"></textarea>
+      <button type="submit">Convert All</button>
     </form>
-    <div class="card-section">
-      <div class="card-title">Original Coordinates</div>
-      <div id="result"></div>
-      <div class="coord-action-row" id="coord-line" style="display:none;">
-        <button onclick="copyCoord('orig')">Copy</button>
-        <button onclick="showOnMap('orig')">Show on Map</button>
-        <span id="notification"></span>
-      </div>
-    </div>
-    <button id="invertBtn" onclick="showInverted()" style="display:none; margin:0.5em auto 0.1em auto;min-width:160px;">Show as South West</button>
-    <div class="card-section">
-      <div class="card-title">Inverted Coordinates (S/W)</div>
-      <div id="invertedResult"></div>
-      <div class="coord-action-row" id="coord-line-inv" style="display:none;">
-        <button onclick="copyCoord('inv')">Copy</button>
-        <button onclick="showOnMap('inv')">Show on Map</button>
-        <span id="notificationInverted"></span>
-      </div>
-    </div>
+    <button id="downloadBtn" onclick="downloadResults()" style="display:none;">Download Results</button>
+    <div id="multiTableBox"></div>
   </div>
 <script>
-let lastOrigLat = null, lastOrigLng = null, lastOrigText = "";
-let lastInvLat = null, lastInvLng = null, lastInvText = "";
+let lastTableRaw = []; // Store last processed results for download
 
-function processDigits() {
-    const input = document.getElementById("input5").value.trim();
-    const result = document.getElementById("result");
-    const coordLine = document.getElementById("coord-line");
-    const invertBtn = document.getElementById("invertBtn");
-    const invSection = document.getElementById("invertedResult");
-    const invCoordLine = document.getElementById("coord-line-inv");
-    // Reset
-    result.innerHTML = "";
-    invSection.innerHTML = "";
-    coordLine.style.display = "none";
-    invCoordLine.style.display = "none";
-    invertBtn.style.display = "none";
-    lastOrigLat = lastOrigLng = lastOrigText = "";
-    lastInvLat = lastInvLng = lastInvText = "";
+function showToast(msg, isSuccess) {
+    const notif = document.getElementById('notif');
+    notif.innerHTML = `<div class="toast${isSuccess?' success':''}">${msg}</div>`;
+    setTimeout(()=>{ notif.innerHTML = ""; }, 2000);
+}
 
-    if (!/^\d{5}$/.test(input)) {
-        result.innerHTML = "<span style='color:red'>Please enter exactly 5 digits.</span>";
-        return;
-    }
-    // Assign [A][B][C][D][E]
-    const digits = input.split('');
-    const [A,B,C,D,E] = digits;
+// Parse and normalize codes into 5-digit strings
+function parseCodes(raw) {
+    if (!raw) return [];
+    // Split on commas, new lines, or spaces
+    let arr = raw.trim().replace(/[^0-9,\s]/g,'').split(/[\s,]+/);
+    return arr.filter(Boolean).map(c => c.trim());
+}
 
-    // [C][A] EAST, NORTH = sum([A][B], [D][E])
+// Calculate coordinates for a 5-digit string
+function calcCoord(code) {
+    if(!/^\d{5}$/.test(code)) return {valid:false, code};
+    const [A,B,C,D,E] = code.split('');
     let east = Number(C + A);
     let north = parseInt(A + B, 10) + parseInt(D + E, 10);
-
-    // Format with 4 decimals
-    const formattedEast = east.toFixed(4) + "° E";
-    const formattedNorth = north.toFixed(4) + "° N";
-
-    // Save coordinates for original
-    lastOrigLat = north;
-    lastOrigLng = east;
-    lastOrigText = `${formattedNorth}, ${formattedEast}`;
-
-    let output = `<div class="digits">[A]=${A} [B]=${B} [C]=${C} [D]=${D} [E]=${E}</div>
-                  <div class="coord">${formattedNorth}, ${formattedEast}</div>`;
-
-    result.innerHTML = output;
-    coordLine.style.display = "flex";
-    invertBtn.style.display = "inline-block";
+    let formattedEast = east.toFixed(4) + "° E";
+    let formattedNorth = north.toFixed(4) + "° N";
+    let formattedInvertedEast = east.toFixed(4) + "° W";
+    let formattedInvertedNorth = north.toFixed(4) + "° S";
+    return {
+        valid:true,
+        code: code,
+        east, north,
+        formattedEast, formattedNorth,
+        formattedInvertedEast, formattedInvertedNorth,
+        copyText: `${formattedNorth}, ${formattedEast}`,
+        copyInvertedText: `${formattedInvertedNorth}, ${formattedInvertedEast}`
+    };
 }
-
-function copyCoord(which) {
-    if (which === 'orig' && lastOrigText) {
-        navigator.clipboard.writeText(lastOrigText).then(() => showNotification("Coordinate has been copied!", 'orig'));
-    } else if (which === 'inv' && lastInvText) {
-        navigator.clipboard.writeText(lastInvText).then(() => showNotification("Inverted coordinate copied!", 'inv'));
-    }
+function copyCoordRow(type, idx) {
+    const el = document.getElementById(type==="inv"?`copyInv${idx}`:`copy${idx}`);
+    const text = (type==="inv"?el.dataset.copyinv:el.dataset.copy);
+    navigator.clipboard.writeText(text).then(()=>{
+        showToast("Copied: "+text,true);
+    });
 }
-
-function showNotification(msg, which) {
-    const note = document.getElementById(which === 'inv' ? "notificationInverted" : "notification");
-    note.textContent = msg;
-    note.style.opacity = 1;
-    setTimeout(() => {
-        note.style.opacity = 0;
-    }, 2000);
-}
-
-function showOnMap(which) {
-    let lat, lng;
-    if (which === 'orig') {
-        lat = lastOrigLat; lng = lastOrigLng;
-    } else {
-        lat = -lastOrigLat;
-        lng = -lastOrigLng;
-    }
-    if (lat === null || lng === null) return;
+function mapCoordRow(type, idx) {
+    const el = document.getElementById(type==="inv"?`mapInv${idx}`:`map${idx}`);
+    const lat = (type==="inv"?-1:1)*parseFloat(el.dataset.lat);
+    const lng = (type==="inv"?-1:1)*parseFloat(el.dataset.lng);
     const url = `https://www.google.com/maps?q=${lat.toFixed(4)},${lng.toFixed(4)}`;
     window.open(url, "_blank");
 }
 
-function showInverted() {
-    if (lastOrigLat === null || lastOrigLng === null) return;
-    const invSection = document.getElementById("invertedResult");
-    const invCoordLine = document.getElementById("coord-line-inv");
-    // Invert hemisphere labels only (N <-> S, E <-> W), numbers don't change
-    const formattedEast = lastOrigLng.toFixed(4) + "° W";
-    const formattedNorth = lastOrigLat.toFixed(4) + "° S";
-    lastInvLat = -lastOrigLat;
-    lastInvLng = -lastOrigLng;
-    lastInvText = `${formattedNorth}, ${formattedEast}`;
-    invSection.innerHTML = `<div class="coord">${formattedNorth}, ${formattedEast}</div>`;
-    invCoordLine.style.display = "flex";
+function processMultipleInputs() {
+    const raw = document.getElementById('codesArea').value;
+    const box = document.getElementById('multiTableBox');
+    box.innerHTML = "";
+    let codes = parseCodes(raw);
+    let downloadBtn = document.getElementById('downloadBtn');
+    lastTableRaw = [];
+    downloadBtn.style.display = "none";
+
+    if(codes.length === 0) {
+        showToast('Please enter one or more 5-digit codes.', false);
+        return;
+    }
+    let table = `<table>
+        <tr>
+            <th>#</th>
+            <th>Digits</th>
+            <th>Original<br>(N, E)</th>
+            <th>Actions</th>
+            <th>Inverted<br>(S, W)</th>
+            <th>Actions</th>
+        </tr>`;
+    let anyInvalid = false;
+    let anyValid = false;
+    let tableraw = [];
+    codes.forEach((code,i) => {
+        const c = calcCoord(code);
+        let tableRowObj = {idx:i+1, code: code};
+        table += `<tr>`;
+        table += `<td>${i+1}</td>`;
+        if(!c.valid) {
+            table += `<td colspan="5" class="error-cell">Invalid code: ${code}</td>`;
+            anyInvalid = true;
+            tableRowObj.err = true;
+        } else {
+            anyValid = true;
+            table += `<td class="digits">${c.code}</td>`;
+            table += `<td class="coord">${c.formattedNorth}<br>${c.formattedEast}</td>`;
+            table += `<td class="actions">
+                <button id="copy${i}" data-copy="${c.copyText}" onclick="copyCoordRow('orig',${i})">Copy</button>
+                <button id="map${i}" data-lat="${c.north}" data-lng="${c.east}" onclick="mapCoordRow('orig',${i})">Map</button>
+                </td>`;
+            table += `<td class="coord">${c.formattedInvertedNorth}<br>${c.formattedInvertedEast}</td>`;
+            table += `<td class="actions">
+                <button id="copyInv${i}" data-copyinv="${c.copyInvertedText}" onclick="copyCoordRow('inv',${i})">Copy</button>
+                <button id="mapInv${i}" data-lat="${c.north}" data-lng="${c.east}" onclick="mapCoordRow('inv',${i})">Map</button>
+                </td>`;
+            tableRowObj.err = false;
+            tableRowObj.orig = `${c.formattedNorth}, ${c.formattedEast}`;
+            tableRowObj.inv = `${c.formattedInvertedNorth}, ${c.formattedInvertedEast}`;
+        }
+        tableraw.push(tableRowObj);
+        table += `</tr>`;
+    });
+    table += `</table>`;
+    box.innerHTML = table;
+    lastTableRaw = tableraw;
+    if(anyInvalid) {
+        showToast(`Some codes are invalid. Only valid 5-digit numbers are processed.`, false);
+    } else {
+        showToast(`Converted ${codes.length} code${codes.length>1?'s':''} successfully!`, true);
+    }
+    // Show download button if there's at least one valid coordinate
+    downloadBtn.style.display = (anyValid ? "block" : "none");
 }
 
-///This only works for only specific format///
+function downloadResults() {
+    if (!lastTableRaw || lastTableRaw.length === 0) {
+        showToast("No data to download.", false);
+        return;
+    }
+    let lines = [];
+    lines.push("Multi-Coordinate Conversion Results");
+    lines.push("==================================");
+    lines.push("Digits    | Original (N,E)            | Inverted (S,W)");
+    lines.push("----------|---------------------------|---------------------------");
+    lastTableRaw.forEach(row => {
+        if(row.err) {
+            lines.push(`${row.code.padEnd(10,' ')}| [Invalid code]`);
+        } else {
+            lines.push(
+`${row.code.padEnd(10,' ')}| ${row.orig.padEnd(25,' ')} | ${row.inv}`);
+        }
+    });
+    let txt = lines.join('\r\n');
+    // Initiate download
+    let blob = new Blob([txt], {type: 'text/plain'});
+    let link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'coordinates.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Downloaded results as coordinates.txt", true);
+}
 </script>
 </body>
 </html>
